@@ -1,5 +1,6 @@
 <?php
 
-use App\Http\Endpoints\Api\MapApiEndpoints;
+use App\Http\Controllers\Api\Projects\ProjectController;
+use Illuminate\Support\Facades\Route;
 
-MapApiEndpoints::mapApiEndpoints();
+Route::prefix('v1/auth')->group(function () {});

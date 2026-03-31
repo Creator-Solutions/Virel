@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use App\Domain\Auth\Contracts\IUserRepository;
+use App\Domain\Deployments\Contracts\IDeploymentRepository;
+use App\Domain\Projects\Contracts\IProjectRepository;
+use App\Infrastructure\Persistence\Repositories\DeploymentRepository;
+use App\Infrastructure\Persistence\Repositories\ProjectRepository;
 use App\Infrastructure\Persistence\Repositories\UserRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -17,8 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
         $this->app->bind(IUserRepository::class, UserRepository::class);
+        $this->app->bind(IProjectRepository::class, ProjectRepository::class);
+        $this->app->bind(IDeploymentRepository::class, DeploymentRepository::class);
     }
 
     /**

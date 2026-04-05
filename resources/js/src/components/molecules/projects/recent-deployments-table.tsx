@@ -34,14 +34,16 @@ function RecentDeploymentsTable({ deployments, projectId, onNavigate }: RecentDe
           {deployments.map((deployment) => (
             <tr
               key={deployment.id}
-              onClick={() => onNavigate(`/home/projects/${projectId}/deployments/${deployment.id}`)}
+              onClick={() => onNavigate(`home/projects/${projectId}/deployments/${deployment.id}`)}
               className="cursor-pointer transition-colors hover:bg-virel-base/50"
             >
               <td className="px-6 py-4">
                 <DeploymentStatusBadge status={deployment.status} size="sm" />
               </td>
               <td className="px-6 py-4">
-                <MonoText className='text-virel-text'>{deployment.commit_sha ? deployment.commit_sha.slice(0, 7) : '—'}</MonoText>
+                <MonoText className="text-virel-text">
+                  {deployment.commit_sha ? deployment.commit_sha.slice(0, 7) : '—'}
+                </MonoText>
               </td>
               <td className="px-6 py-4 text-virel-text capitalize">{deployment.trigger}</td>
               <td className="px-6 py-4 text-virel-text">

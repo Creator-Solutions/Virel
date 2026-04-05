@@ -7,6 +7,7 @@ import { projectsService } from '@/domains/projects/projects.service';
 import type { ProjectDetail, Artifact } from '@/domains/projects/projects.types';
 import { ProjectDetail as ProjectDetailOrganism } from '@/src/components/organisms/projects';
 import { ConfirmModal } from '@/src/components/atoms/confirm-modal';
+import { WarningBanner } from '@/src/components/atoms/warning-banner';
 import { Skeleton } from '@/src/components/atoms/skeleton';
 import HomeLayout from '../..';
 
@@ -33,7 +34,7 @@ const ProjectDetailPage = () => {
     if (!project) {
       return;
     }
-    
+
     setDeploying(true);
     setDeployModal(false);
 
@@ -49,7 +50,7 @@ const ProjectDetailPage = () => {
     if (!project || !rollbackModal.artifact) {
       return;
     }
-    
+
     setRollbackModal({ open: false, artifact: null });
 
     try {
@@ -80,6 +81,20 @@ const ProjectDetailPage = () => {
 
   return (
     <div className="p-6">
+      {project.github_setup_pending && (
+        <WarningBanner
+          message="GitHub integration is not configured. Add a Personal Access Token in Project Settings to enable automatic deployments."
+          action={
+            <button
+              onClick={() => router.visit(`/home/projects/${project.id}/settings`)}
+              className="mt-2 text-sm font-medium text-yellow-400 underline underline-offset-2 hover:text-yellow-300"
+            >
+              Go to Project Settings →
+            </button>
+          }
+        />
+      )}
+
       <ProjectDetailOrganism
         project={project}
         isDeploying={isDeploying}

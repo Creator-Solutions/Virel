@@ -8,6 +8,8 @@ use App\Domain\Projects\Contracts\IProjectRepository;
 use App\Infrastructure\Persistence\Repositories\DeploymentRepository;
 use App\Infrastructure\Persistence\Repositories\ProjectRepository;
 use App\Infrastructure\Persistence\Repositories\UserRepository;
+use App\Services\DeploymentService;
+use App\Services\GithubService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(IUserRepository::class, UserRepository::class);
         $this->app->bind(IProjectRepository::class, ProjectRepository::class);
         $this->app->bind(IDeploymentRepository::class, DeploymentRepository::class);
+        $this->app->singleton(GithubService::class);
+        $this->app->singleton(DeploymentService::class);
     }
 
     /**

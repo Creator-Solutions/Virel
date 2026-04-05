@@ -15,6 +15,14 @@ class GithubSessionCallbackController extends Controller
     public function __invoke(Request $request, IUserRepository $user_repository)
     {
         $code = $request->query('code');
+        $returnedState = $request->query('state');
+        $storedState = session('github_oauth_state');
+
+        if (! $returnedState || ! $storedState || ! hash_equals($storedState, $returnedState)) {
+            abort(403, 'Invalid OAuth state parameter.');
+        }
+
+        session()->forget('github_oauth_state');
 
         if (! $code) {
             return redirect()->route('web.auth.login')

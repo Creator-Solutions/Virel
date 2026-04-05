@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Web\Home;
+namespace App\Http\Controllers\Api\Projects;
 
 use App\Domain\Projects\Contracts\IProjectRepository;
 use App\Http\Controllers\Controller;
@@ -18,6 +18,6 @@ class DeleteProjectController extends Controller
 
         $project_repository->delete($project);
 
-        return to_route('home.projects.index')->with('success', 'Project deleted successfully.');
+        return response()->json(null, 204);
     }
 }

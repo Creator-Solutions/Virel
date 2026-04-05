@@ -6,17 +6,18 @@ import HomeLayout from '@/pages/home';
 
 interface PageProps {
   errors?: Record<string, string>;
+  virel_url_configured?: boolean;
 }
 
 const CreateProject = () => {
-  const { errors } = usePage().props as PageProps;
+  const { errors, virel_url_configured } = usePage().props as PageProps;
   const handleCancel = () => {
     router.visit('/home/projects');
   };
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <CreateProjectForm onCancel={handleCancel} errors={errors} />
+      <CreateProjectForm onCancel={handleCancel} errors={errors} virel_url_configured={virel_url_configured} />
     </div>
   );
 };

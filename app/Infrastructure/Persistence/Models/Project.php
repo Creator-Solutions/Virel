@@ -23,11 +23,15 @@ class Project extends Model
         'github_branch',
         'github_pat',
         'webhook_secret',
-        'is_active',
+        'framework_type',
+        'app_root_path',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'github_setup_pending' => 'boolean',
+        'github_pat' => 'encrypted',
+        'webhook_secret' => 'encrypted',
     ];
 
     public function user(): BelongsTo
@@ -53,5 +57,15 @@ class Project extends Model
     public function recentArtifacts()
     {
         return $this->hasMany(Artifact::class)->orderBy('created_at', 'desc')->limit(5);
+    }
+
+    public function hasGithubSetup(): bool
+    {
+        return ! empty($this->github_hook_id) && ! $this->github_setup_pending;
+    }
+
+    public function hasTwoArtifacts(): bool
+    {
+        return $this->framework_type === 'laravel';
     }
 }

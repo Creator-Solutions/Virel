@@ -46,7 +46,7 @@ function ProjectsTable({ projects, onNavigate, onDelete, isLoading }: ProjectsTa
           description="Get started by creating your first project."
           action={{
             label: 'Create Project',
-            onClick: () => onNavigate('/home/projects/create'),
+            onClick: () => onNavigate('home/projects/create'),
           }}
         />
       </div>
@@ -72,8 +72,8 @@ function ProjectsTable({ projects, onNavigate, onDelete, isLoading }: ProjectsTa
             <TableRow key={project.id} className="group border-virel-border hover:bg-virel-base/50">
               <TableCell className="w-[200px] py-3 pl-4">
                 <button
-                  onClick={() => onNavigate(`projects/${project.id}`)}
-                  className="font-medium text-virel-text hover:text-virel-accent transition-colors cursor-pointer"
+                  onClick={() => onNavigate(`home/projects/${project.id}`)}
+                  className="cursor-pointer font-medium text-virel-text transition-colors hover:text-virel-accent"
                 >
                   {project.name}
                 </button>
@@ -96,7 +96,7 @@ function ProjectsTable({ projects, onNavigate, onDelete, isLoading }: ProjectsTa
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    onClick={() => onNavigate(`/home/projects/${project.id}`)}
+                    onClick={() => onNavigate(`home/projects/${project.id}`)}
                     className="rounded p-1.5 text-virel-textSecondary transition-colors hover:bg-virel-border hover:text-virel-text"
                   >
                     View
@@ -104,7 +104,7 @@ function ProjectsTable({ projects, onNavigate, onDelete, isLoading }: ProjectsTa
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    onClick={() => onNavigate(`/home/projects/${project.id}/settings`)}
+                    onClick={() => onNavigate(`home/projects/${project.id}/settings`)}
                     className="rounded p-1.5 text-virel-textSecondary transition-colors hover:bg-virel-border hover:text-virel-text"
                   >
                     <Settings className="h-4 w-4" />

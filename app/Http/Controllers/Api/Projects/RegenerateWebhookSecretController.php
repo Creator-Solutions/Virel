@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Web\Home;
+namespace App\Http\Controllers\Api\Projects;
 
 use App\Domain\Projects\Contracts\IProjectRepository;
 use App\Http\Controllers\Controller;
@@ -16,8 +16,8 @@ class RegenerateWebhookSecretController extends Controller
             abort(404);
         }
 
-        $project_repository->regenerateWebhookSecret($project);
+        $project = $project_repository->regenerateWebhookSecret($project);
 
-        return back()->with('success', 'Webhook secret regenerated successfully.');
+        return response()->json(['secret' => $project->webhook_secret]);
     }
 }

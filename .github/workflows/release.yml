@@ -1,0 +1,182 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Check for new migrations
+        id: check_migrations
+        run: |
+          # Get the last release tag
+          last_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$last_tag" ]; then
+            # No previous tag, assume first release
+            echo "has_new_migrations=true" >> $GITHUB_OUTPUT
+            echo "has_install_sql=true" >> $GITHUB_OUTPUT
+            echo "No previous tag found, treating as first release - will generate install.sql"
+          else
+            # Check if there are any new or modified migration files compared to last tag
+            # Compare using git diff to detect additions and modifications
+            migration_changes=$(git diff --name-only $last_tag -- database/migrations/ 2>/dev/null || echo "")
+            
+            if [ -n "$migration_changes" ]; then
+              echo "has_new_migrations=true" >> $GITHUB_OUTPUT
+              echo "Migrations changed since $last_tag:"
+              echo "$migration_changes"
+            else
+              echo "has_new_migrations=false" >> $GITHUB_OUTPUT
+              echo "No migration changes detected"
+            fi
+            
+            # Also check if install.sql exists and matches current migrations
+            if [ -f "database/install.sql" ]; then
+              # Get the most recent migration file timestamp
+              latest_migration=$(ls -t database/migrations/*.php 2>/dev/null | head -1)
+              install_sql_date=$(stat -c %Y database/install.sql 2>/dev/null || echo "0")
+              migration_date=$(stat -c %Y "$latest_migration" 2>/dev/null || echo "0")
+              
+              if [ "$migration_date" -gt "$install_sql_date" ]; then
+                echo "has_install_sql=true" >> $GITHUB_OUTPUT
+                echo "install.sql is older than latest migration, will regenerate"
+              else
+                echo "has_install_sql=false" >> $GITHUB_OUTPUT
+                echo "install.sql is up to date"
+              fi
+            else
+              echo "has_install_sql=true" >> $GITHUB_OUTPUT
+              echo "install.sql does not exist, will generate"
+            fi
+          fi
+
+      - name: Generate install.sql if needed
+        if: steps.check_migrations.outputs.has_new_migrations == 'true' || steps.check_migrations.outputs.has_install_sql == 'true'
+        run: |
+          # Set up MySQL for migration
+          sudo systemctl start mysql
+          sudo mysql -e "CREATE DATABASE IF NOT EXISTS virel_test"
+
+          # Configure .env for testing
+          cp .env.example .env
+          php artisan key:generate
+
+          # Update .env with test database credentials
+          sed -i 's/DB_DATABASE=.*/DB_DATABASE=virel_test/' .env
+
+          # Run migrations
+          php artisan migrate --force
+
+          # Export the schema using mysqldump
+          mysqldump -u root --password=root --no-data virel_test > database/install.sql || true
+
+          # If mysqldump didn't work, try using artisan schema:dump
+          if [ ! -s "database/install.sql" ]; then
+            php artisan migrate:generate --ignore-existing 2>/dev/null || true
+          fi
+
+          # Verify install.sql was created
+          if [ -s "database/install.sql" ]; then
+            echo "install.sql generated successfully ($(wc -l < database/install.sql) lines)"
+            head -5 database/install.sql
+          else
+            echo "Warning: install.sql generation failed, using existing file"
+          fi
+
+      - name: Create frontend zip
+        run: |
+          zip -r virel-frontend.zip public/ \
+            -x "public/.gitignore" \
+            -x "public/hot" \
+            -x "public/index.php"
+
+      - name: Create backend zip
+        run: |
+          zip -r virel-backend.zip . \
+            -x ".git/*" \
+            -x ".env" \
+            -x ".env.example" \
+            -x ".env.backup" \
+            -x "node_modules/*" \
+            -x "vendor/*" \
+            -x "tests/*" \
+            -x "*.test.*" \
+            -x ".phpunit.result.cache" \
+            -x ".github/*" \
+            -x ".gitignore" \
+            -x ".editorconfig" \
+            -x ".prettierignore" \
+            -x ".prettierrc" \
+            -x ".npmrc" \
+            -x "eslint.config.js" \
+            -x "package.json" \
+            -x "package-lock.json" \
+            -x "phpunit.xml" \
+            -x "pint.json" \
+            -x "tailwind.config.js" \
+            -x "tsconfig.json" \
+            -x "vite.config.ts" \
+            -x "composer.json" \
+            -x "composer.lock" \
+            -x "artisan" \
+            -x "bootstrap/ssr/*" \
+            -x "resources/*" \
+            -x "routes/api.php" \
+            -x "routes/channels.php" \
+            -x "routes/console.php" \
+            -x "storage/logs/*" \
+            -x "storage/pail/*"
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: virel-frontend
+          path: virel-frontend.zip
+          retention-days: 30
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: virel-backend
+          path: virel-backend.zip
+          retention-days: 30
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            virel-frontend.zip
+            virel-backend.zip
+          draft: false
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

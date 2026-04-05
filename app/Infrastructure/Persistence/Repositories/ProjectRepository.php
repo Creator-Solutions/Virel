@@ -60,6 +60,8 @@ class ProjectRepository implements IProjectRepository
             'github_pat' => $data['github_pat'] ?? null,
             'webhook_secret' => Str::random(32),
             'is_active' => true,
+            'framework_type' => $data['framework_type'],
+            'app_root_path' => $data['app_root_path'] ?? null,
         ]);
     }
 
@@ -73,6 +75,8 @@ class ProjectRepository implements IProjectRepository
             'github_repo' => $data['github_repo'],
             'github_branch' => $data['github_branch'] ?? 'main',
             'github_pat' => $data['github_pat'] ?? null,
+            'framework_type' => $data['framework_type'] ?? $project->framework_type,
+            'app_root_path' => $data['app_root_path'] ?? $project->app_root_path,
         ]);
 
         return $project->fresh();

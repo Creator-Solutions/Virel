@@ -9,11 +9,10 @@ import HomeLayout from '../..';
 interface ProjectSettingsPageProps {
   project: Project;
   errors?: Record<string, string>;
-  success?: string;
 }
 
 const ProjectSettingsPage = () => {
-  const { project, errors, success } = usePage().props as unknown as ProjectSettingsPageProps;
+  const { project, errors } = usePage().props as unknown as ProjectSettingsPageProps;
 
   if (!project) {
     return (
@@ -27,7 +26,7 @@ const ProjectSettingsPage = () => {
 
   return (
     <div className="p-6">
-      <ProjectSettingsForm project={project} errors={errors} success={success} />
+      <ProjectSettingsForm project={project} errors={errors} />
     </div>
   );
 };

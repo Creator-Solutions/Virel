@@ -24,12 +24,12 @@ const Projects = () => {
 
   useEffect(() => {
     if (pageProps.projects) {
-        setProjects(pageProps.projects);
+      setProjects(pageProps.projects);
     }
   }, [pageProps.projects]);
 
   const handleNavigate = (path: string) => {
-    router.visit(path);
+    router.visit(`/${path}`);
   };
 
   const handleDelete = (project: Project) => {

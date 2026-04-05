@@ -60,10 +60,14 @@ function ProjectDetailHeader({ project, isDeploying, onDeploy, onNavigate }: Pro
             </>
           )}
         </Button>
-        <Button variant="outline" onClick={() => onNavigate(`/home/projects/${project.id}/deployments`)}>
+        <Button variant="outline" onClick={() => onNavigate(`${project.id}/deployments`)}>
           View History
         </Button>
-        <Button size="icon-sm" onClick={() => onNavigate(`/home/projects/${project.id}/settings`)} className='cursor-pointer'>
+        <Button
+          size="icon-sm"
+          onClick={() => onNavigate(`${project.id}/settings`)}
+          className="cursor-pointer"
+        >
           <Settings className="h-4 w-4 text-virel-text" />
         </Button>
       </div>

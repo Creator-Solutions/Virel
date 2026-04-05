@@ -14,7 +14,7 @@ interface ProjectDetailProps {
 
 function ProjectDetail({ project, isDeploying, onDeploy, onRollback, onNavigate }: ProjectDetailProps) {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 mt-5">
       <ProjectDetailHeader project={project} isDeploying={isDeploying} onDeploy={onDeploy} onNavigate={onNavigate} />
 
       <section>
@@ -31,7 +31,7 @@ function ProjectDetail({ project, isDeploying, onDeploy, onRollback, onNavigate 
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-medium text-virel-text">Recent Deployments</h2>
             <button
-              onClick={() => onNavigate(`/home/projects/${project.id}/deployments`)}
+              onClick={() => onNavigate(`${project.id}/deployments`)}
               className="text-sm text-virel-textSecondary transition-colors hover:text-virel-text"
             >
               View all

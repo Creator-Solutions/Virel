@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { TextInput } from '@/src/components/atoms/text-input';
 import { PasswordInput } from '@/src/components/atoms/password-input';
+import { Button } from '@/src/components/atoms/button';
 import { FormLabel } from '@/src/components/atoms/form-label';
 import { FormError } from '@/src/components/atoms/form-error';
 import { SectionDivider } from '@/src/components/atoms/section-divider';
@@ -16,9 +17,21 @@ interface GitHubSettingsSectionProps {
   };
   errors: Record<string, string>;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPatSave?: () => void;
+  isSavingPat?: boolean;
+  patSaveMessage?: string | null;
+  patError?: string | null;
 }
 
-function GitHubSettingsSection({ formData, errors, onChange }: GitHubSettingsSectionProps) {
+function GitHubSettingsSection({
+  formData,
+  errors,
+  onChange,
+  onPatSave,
+  isSavingPat = false,
+  patSaveMessage,
+  patError,
+}: GitHubSettingsSectionProps) {
   return (
     <SectionDivider heading="GitHub Repository">
       <FormFieldGrid className="mb-4">
@@ -78,7 +91,26 @@ function GitHubSettingsSection({ formData, errors, onChange }: GitHubSettingsSec
           <p className="mt-2 text-sm text-virel-textSecondary">
             Personal access token. Required scopes: <span className="font-mono text-xs">repo</span>
           </p>
+          <p className="mt-1 text-xs text-virel-textSecondary">
+            Updating your PAT will automatically configure the GitHub webhook and workflow file for this project.
+          </p>
           <FormError message={errors.github_pat} />
+
+          {patSaveMessage && <p className="mt-2 text-sm text-virel-successText">{patSaveMessage}</p>}
+          {patError && <p className="mt-2 text-sm text-virel-errorText">{patError}</p>}
+
+          {onPatSave && (
+            <div className="mt-3">
+              <Button
+                type="button"
+                onClick={onPatSave}
+                disabled={isSavingPat || !formData.github_pat}
+                className="btn-secondary"
+              >
+                {isSavingPat ? 'Saving...' : 'Save PAT'}
+              </Button>
+            </div>
+          )}
         </div>
       </FormFieldGrid>
     </SectionDivider>

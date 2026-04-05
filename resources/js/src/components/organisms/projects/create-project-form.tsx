@@ -1,18 +1,26 @@
 import { useState } from 'react';
-import { router } from '@inertiajs/react';
-import { Eye, EyeOff, Info } from 'lucide-react';
+import { router, usePage } from '@inertiajs/react';
+import { Eye, EyeOff, Info, AlertTriangle } from 'lucide-react';
 
 import { TextInput } from '@/src/components/atoms/text-input';
 import { FormLabel } from '@/src/components/atoms/form-label';
 import { FormError } from '@/src/components/atoms/form-error';
 import { SectionDivider } from '@/src/components/atoms/section-divider';
+import { SelectField } from '@/src/components/molecules/select-field';
 
 interface CreateProjectFormProps {
   onCancel?: () => void;
   errors?: Record<string, string>;
+  virel_url_configured?: boolean;
 }
 
-function CreateProjectForm({ onCancel, errors = {} }: CreateProjectFormProps) {
+const FRAMEWORK_OPTIONS = [
+  { value: 'laravel', label: 'Laravel (PHP)' },
+  { value: 'react-vite', label: 'React SPA (Vite)' },
+  { value: 'wordpress', label: 'WordPress' },
+];
+
+function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true }: CreateProjectFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     public_url: '',
@@ -21,12 +29,23 @@ function CreateProjectForm({ onCancel, errors = {} }: CreateProjectFormProps) {
     github_repo: '',
     github_branch: 'main',
     github_pat: '',
+    framework_type: '',
+    app_root_path: '',
   });
   const [showPat, setShowPat] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'framework_type' && value !== 'laravel' ? { app_root_path: '' } : {}),
+    }));
   };
 
   const handleSubmit = () => {
@@ -99,8 +118,61 @@ function CreateProjectForm({ onCancel, errors = {} }: CreateProjectFormProps) {
           </div>
         </SectionDivider>
 
+        {/* Framework Section */}
+        <SectionDivider heading="Framework">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <SelectField
+              id="framework_type"
+              name="framework_type"
+              label="Framework Type"
+              value={formData.framework_type}
+              onChange={handleSelectChange}
+              options={FRAMEWORK_OPTIONS}
+              placeholder="Select a framework"
+              error={errors.framework_type}
+            />
+            {formData.framework_type === 'laravel' && (
+              <div>
+                <FormLabel htmlFor="app_root_path" className="mb-1 block">
+                  App Root Path
+                </FormLabel>
+                <TextInput
+                  id="app_root_path"
+                  name="app_root_path"
+                  value={formData.app_root_path}
+                  onChange={handleChange}
+                  className="font-mono"
+                  placeholder="/home/username"
+                />
+                <p className="mt-2 text-sm text-virel-textSecondary">
+                  Absolute path one level above public_html, e.g.{' '}
+                  <span className="font-mono text-xs">/home/username</span>
+                </p>
+                <FormError message={errors.app_root_path} />
+              </div>
+            )}
+          </div>
+        </SectionDivider>
+
         {/* GitHub Section */}
         <SectionDivider heading="GitHub Repository">
+          {!virel_url_configured && (
+            <div className="mb-4 flex gap-3 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-4">
+              <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-400" />
+              <div className="flex flex-col">
+                <p className="text-sm text-yellow-200">
+                  Instance URL not configured. GitHub webhook creation will be skipped.
+                </p>
+                <a
+                  href="/home/settings"
+                  className="mt-1 text-sm font-medium text-yellow-400 underline underline-offset-2 hover:text-yellow-300"
+                >
+                  Configure Instance URL in Settings →
+                </a>
+              </div>
+            </div>
+          )}
+
           <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <FormLabel htmlFor="github_owner" className="mb-1 block">

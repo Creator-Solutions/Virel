@@ -23,3 +23,11 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Block install.php after installation
+<Files "install.php">
+  <IfModule mod_rewrite.c>
+    RewriteCond %{DOCUMENT_ROOT}/../.installed -f
+    RewriteRule ^ - [F,L]
+  </IfModule>
+</Files>

@@ -7,9 +7,14 @@ export interface Project {
   github_owner: string;
   github_repo: string;
   github_branch: string;
+  github_pat: string | null;
   webhook_secret: string | null;
   webhook_url: string | null;
   is_active: boolean;
+  framework_type: 'laravel' | 'react-vite' | 'wordpress';
+  app_root_path: string | null;
+  github_hook_id: string | null;
+  github_setup_pending: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -46,6 +51,10 @@ export interface Deployment {
   updated_at: string;
 }
 
+export interface DeploymentWithProject extends Deployment {
+  project: Project;
+}
+
 export interface Artifact {
   id: string;
   deployment_id: string;
@@ -71,4 +80,16 @@ export interface ProjectSettingsPayload {
   github_repo: string;
   github_branch: string;
   github_pat: string | null;
+  framework_type: 'laravel' | 'react-vite' | 'wordpress';
+  app_root_path: string;
+}
+
+export interface DeploymentDetailPageProps {
+  project: {
+    id: string;
+    name: string;
+  };
+  deployment: Deployment;
+  artifacts: Artifact[];
+  logLines: string[];
 }

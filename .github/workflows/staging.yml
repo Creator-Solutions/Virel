@@ -33,9 +33,15 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
-      - name: Create staging zip
+      - name: Create staging frontend zip
         run: |
-          zip -r virel_staging.zip . \
+          zip -r virel_staging_frontend.zip public/ \
+            -x "public/.gitignore" \
+            -x "public/hot"
+
+      - name: Create staging backend zip
+        run: |
+          zip -r virel_staging_backend.zip . \
             -x ".git/*" \
             -x ".env" \
             -x ".env.example" \
@@ -61,14 +67,25 @@ jobs:
             -x "vite.config.ts" \
             -x "composer.json" \
             -x "composer.lock" \
+            -x "artisan" \
             -x "bootstrap/ssr/*" \
             -x "resources/*" \
+            -x "routes/api.php" \
+            -x "routes/channels.php" \
+            -x "routes/console.php" \
             -x "storage/logs/*" \
             -x "storage/pail/*"
 
-      - name: Upload staging artifact
+      - name: Upload staging frontend artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virel_staging
-          path: virel_staging.zip
+          name: virel_staging_frontend
+          path: virel_staging_frontend.zip
+          retention-days: 30
+
+      - name: Upload staging backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: virel_staging_backend
+          path: virel_staging_backend.zip
           retention-days: 30

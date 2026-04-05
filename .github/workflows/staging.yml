@@ -1,9 +1,9 @@
-name: release
+name: staging
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - staging
 
 jobs:
   build:
@@ -76,15 +76,9 @@ jobs:
           php artisan migrate --force
           mysqldump -u root --password=root --no-data virel_test > database/install.sql || true
 
-      - name: Create frontend zip
+      - name: Create staging zip
         run: |
-          zip -r virel-frontend.zip public/ \
-            -x "public/.gitignore" \
-            -x "public/hot"
-
-      - name: Create backend zip
-        run: |
-          zip -r virel-backend.zip . \
+          zip -r virel_staging.zip . \
             -x ".git/*" \
             -x ".env" \
             -x ".env.example" \
@@ -110,37 +104,14 @@ jobs:
             -x "vite.config.ts" \
             -x "composer.json" \
             -x "composer.lock" \
-            -x "artisan" \
             -x "bootstrap/ssr/*" \
             -x "resources/*" \
-            -x "routes/api.php" \
-            -x "routes/channels.php" \
-            -x "routes/console.php" \
             -x "storage/logs/*" \
             -x "storage/pail/*"
 
-      - name: Upload frontend artifact
+      - name: Upload staging artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virel-frontend
-          path: virel-frontend.zip
+          name: virel_staging
+          path: virel_staging.zip
           retention-days: 30
-
-      - name: Upload backend artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: virel-backend
-          path: virel-backend.zip
-          retention-days: 30
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            virel-frontend.zip
-            virel-backend.zip
-          draft: false
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

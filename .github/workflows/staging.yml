@@ -79,13 +79,13 @@ jobs:
       - name: Upload staging frontend artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virel_staging_frontend
+          name: virel_staging/frontend
           path: virel_staging_frontend.zip
           retention-days: 30
 
       - name: Upload staging backend artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virel_staging_backend
+          name: virel_staging/backend
           path: virel_staging_backend.zip
           retention-days: 30

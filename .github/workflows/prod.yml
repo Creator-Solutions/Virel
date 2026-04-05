@@ -33,9 +33,15 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
-      - name: Create prod zip
+      - name: Create prod frontend zip
         run: |
-          zip -r virel_prod.zip . \
+          zip -r virel_prod_frontend.zip public/ \
+            -x "public/.gitignore" \
+            -x "public/hot"
+
+      - name: Create prod backend zip
+        run: |
+          zip -r virel_prod_backend.zip . \
             -x ".git/*" \
             -x ".env" \
             -x ".env.example" \
@@ -61,16 +67,27 @@ jobs:
             -x "vite.config.ts" \
             -x "composer.json" \
             -x "composer.lock" \
+            -x "artisan" \
             -x "bootstrap/ssr/*" \
             -x "resources/*" \
+            -x "routes/api.php" \
+            -x "routes/channels.php" \
+            -x "routes/console.php" \
             -x "storage/logs/*" \
             -x "storage/pail/*"
 
-      - name: Upload prod artifact
+      - name: Upload prod frontend artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virel_prod
-          path: virel_prod.zip
+          name: virel_prod_frontend
+          path: virel_prod_frontend.zip
+          retention-days: 30
+
+      - name: Upload prod backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: virel_prod_backend
+          path: virel_prod_backend.zip
           retention-days: 30
 
       - name: Create prod release
@@ -78,7 +95,9 @@ jobs:
         with:
           name: Production Release
           body: 'Production release built from prod branch'
-          files: virel_prod.zip
+          files: |
+            virel_prod_frontend.zip
+            virel_prod_backend.zip
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

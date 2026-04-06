@@ -44,10 +44,8 @@ jobs:
           zip -r virel-backend.zip . \
             -x ".git/*" \
             -x ".env" \
-            -x ".env.example" \
             -x ".env.backup" \
             -x "node_modules/*" \
-            -x "vendor/*" \
             -x "tests/*" \
             -x "*.test.*" \
             -x ".phpunit.result.cache" \
@@ -69,8 +67,10 @@ jobs:
             -x "composer.lock" \
             -x "artisan" \
             -x "bootstrap/ssr/*" \
-            -x "resources/*" \
-            -x "routes/api.php" \
+            -x "resources/views/*" \
+            -x "resources/css/*" \
+            -x "resources/js/*" \
+            -x "resources/fonts/*" \
             -x "routes/channels.php" \
             -x "routes/console.php" \
             -x "storage/logs/*" \

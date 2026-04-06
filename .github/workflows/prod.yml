@@ -79,14 +79,14 @@ jobs:
       - name: Upload prod frontend artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virel_prod_frontend
+          name: virel_prod/frontend
           path: virel_prod_frontend.zip
           retention-days: 30
 
       - name: Upload prod backend artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virel_prod_backend
+          name: virel_prod/backend
           path: virel_prod_backend.zip
           retention-days: 30
 

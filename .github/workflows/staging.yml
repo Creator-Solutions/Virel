@@ -44,10 +44,8 @@ jobs:
           zip -r virel_staging_backend.zip . \
             -x ".git/*" \
             -x ".env" \
-            -x ".env.example" \
             -x ".env.backup" \
             -x "node_modules/*" \
-            -x "vendor/*" \
             -x "tests/*" \
             -x "*.test.*" \
             -x ".phpunit.result.cache" \
@@ -69,8 +67,10 @@ jobs:
             -x "composer.lock" \
             -x "artisan" \
             -x "bootstrap/ssr/*" \
-            -x "resources/*" \
-            -x "routes/api.php" \
+            -x "resources/views/*" \
+            -x "resources/css/*" \
+            -x "resources/js/*" \
+            -x "resources/fonts/*" \
             -x "routes/channels.php" \
             -x "routes/console.php" \
             -x "storage/logs/*" \
@@ -79,13 +79,13 @@ jobs:
       - name: Upload staging frontend artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virel_staging/frontend
+          name: virel_staging_frontend
           path: virel_staging_frontend.zip
           retention-days: 30
 
       - name: Upload staging backend artifact
         uses: actions/upload-artifact@v4
         with:
-          name: virel_staging/backend
+          name: virel_staging_backend
           path: virel_staging_backend.zip
           retention-days: 30

@@ -23,6 +23,7 @@ use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\Auth\ResetPasswordController;
 use App\Http\Controllers\Web\Home\CreateProjectController;
 use App\Http\Controllers\Web\Home\DashboardController;
+use App\Http\Controllers\Web\Home\InstallController;
 use App\Http\Controllers\Web\Home\DeploymentDetailController;
 use App\Http\Controllers\Web\Home\DeploymentHistoryController;
 use App\Http\Controllers\Web\Home\EditUserController;
@@ -35,6 +36,8 @@ use App\Http\Controllers\Web\Home\StoreProjectController;
 use App\Http\Controllers\Web\Home\UsersController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', InstallController::class)->name('install');
+Route::post('/', InstallController::class)->name('install.post');
 Route::get('/login', LoginController::class)->name('login');
 Route::get('/forgot-password', ForgotPasswordController::class)->name('web.auth.forgot-password');
 Route::get('/reset-password', ResetPasswordController::class)->name('web.auth.reset-password');
@@ -106,6 +109,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/home/settings/data', [GetSettingsController::class, '__invoke'])->name('home.settings.data');
     Route::patch('/home/settings', [UpdateSettingsController::class, '__invoke'])->name('home.settings.update');
 });
+
+Route::get('/debug-routes', function () {
+    $routes = collect(\Illuminate\Support\Facades\Route::getRoutes())
+        ->filter(fn($r) => str_contains($r->uri(), 'webhook'))
+        ->map(fn($r) => [
+            'methods' => $r->methods(),
+            'uri'     => $r->uri(),
+            'action'  => $r->getActionName(),
+        ])
+        ->values();
+    return response()->json($routes);
+});
+
+Route::get('/debug-secret/{id}', function ($id) {
+    $project = \App\Infrastructure\Persistence\Models\Project::find($id);
+    return response()->json(['secret' => $project->webhook_secret]);
+})->middleware('auth');
 
 Route::get('sanctum/csrf-cookie', function () {
     return response()->json(['csrf_token' => csrf_token()]);

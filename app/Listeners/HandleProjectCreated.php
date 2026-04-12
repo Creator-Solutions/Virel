@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Events\ProjectCreated;
+use App\Events\ProjectPatUpdated;
 use App\Services\GithubActionsService;
 use App\Services\GithubService;
 use Illuminate\Support\Facades\Log;
@@ -14,31 +15,28 @@ class HandleProjectCreated
         private GithubActionsService $githubActionsService
     ) {}
 
-    public function handle(ProjectCreated $event): void
+    public function handle(ProjectCreated|ProjectPatUpdated $event): void
     {
         $project = $event->project;
 
         if (empty($project->github_pat)) {
-            Log::info("Project {$project->name} created without PAT, skipping webhook setup");
-
+            $project->update(['github_setup_pending' => true]);
+            Log::info("Project {$project->name} has no PAT — GitHub setup skipped.");
             return;
         }
 
+        // Step 1 — Create the GitHub webhook
         $webhookSuccess = $this->githubService->createWebhook($project);
 
-        if (! $webhookSuccess) {
-            Log::warning("Failed to create webhook for project {$project->name}");
-
+        if (!$webhookSuccess) {
+            $project->update(['github_setup_pending' => true]);
+            Log::warning("Webhook creation failed for project {$project->name} — marking as pending.");
             return;
         }
 
-        $workflowSuccess = $this->githubActionsService->createWorkflow($project);
+        // Step 2 — Create VIREL_SECRET + commit workflow file
+        $this->githubActionsService->setupProject($project);
 
-        if ($workflowSuccess) {
-            $project->update(['github_setup_pending' => false]);
-            Log::info("GitHub setup completed for project {$project->name}");
-        } else {
-            Log::warning("Webhook created but workflow creation failed for project {$project->name}");
-        }
+        Log::info("GitHub setup completed for project {$project->name}");
     }
 }

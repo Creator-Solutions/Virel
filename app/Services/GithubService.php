@@ -11,6 +11,8 @@ class GithubService
 {
     private const API_BASE_URL = 'https://api.github.com';
 
+    
+
     public function createWebhook(Project $project): bool
     {
         if (empty($project->github_pat)) {
@@ -178,7 +180,7 @@ class GithubService
     {
         $baseUrl = $this->getVirelUrl() ?? config('app.url');
 
-        return "{$baseUrl}/api/webhook/{$project->id}";
+        return "{$baseUrl}/api/v1/webhook/{$project->id}";
     }
 
     private function getHeaders(string $pat): array

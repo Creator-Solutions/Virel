@@ -2,6 +2,7 @@
 
 namespace App\Infrastructure\Persistence\Repositories;
 
+use Illuminate\Support\Facades\Hash;
 use App\Domain\Projects\Contracts\IProjectRepository;
 use App\Infrastructure\Persistence\Models\Project;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -58,7 +59,7 @@ class ProjectRepository implements IProjectRepository
             'github_repo' => $data['github_repo'],
             'github_branch' => $data['github_branch'] ?? 'main',
             'github_pat' => $data['github_pat'] ?? null,
-            'webhook_secret' => Str::random(32),
+            'webhook_secret' => Hash::make(Str::random(32)),
             'is_active' => true,
             'framework_type' => $data['framework_type'],
             'app_root_path' => $data['app_root_path'] ?? null,

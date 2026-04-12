@@ -5,13 +5,6 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
-// Installation check - serve install.php if not yet installed
-$basePath = dirname(__DIR__);
-if (! file_exists($basePath.'/.installed') && file_exists($basePath.'/public/install.php')) {
-    include $basePath.'/public/install.php';
-    exit;
-}
-
 // Determine if the application is in maintenance mode...
 if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
     require $maintenance;

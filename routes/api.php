@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function () {});
 
-Route::middleware('throttle:30,1')->group(function () {
+Route::prefix('v1')->middleware('throttle:30,1')->group(function () {
     Route::post('/webhook/{projectId}', ReceiveArtifactController::class);
 });
 

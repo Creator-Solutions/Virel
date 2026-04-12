@@ -19,30 +19,30 @@ class ReceiveArtifactController extends Controller
     {
         $project = Project::find($projectId);
 
-        if (! $project) {
+        if (!$project) {
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        if (! $project->is_active) {
+        if (!$project->is_active) {
             return response()->json(['message' => 'Project is inactive.'], 403);
         }
 
+        // Authenticate via Bearer token instead of request body field
+        $token = $request->bearerToken();
+        if (!$token || !hash_equals($project->webhook_secret, $token)) {
+            Log::warning("Invalid or missing Bearer token for project {$project->id}");
+            return response()->json(['error' => 'Unauthorized.'], 401);
+        }
+
         $validator = Validator::make($request->all(), [
-            'secret' => 'required|string',
-            'artifact' => 'required|file|max:102400',
-            'commit_sha' => 'nullable|string|size:40',
-            'branch' => 'nullable|string|max:255',
-            'trigger' => 'nullable|string|in:manual,workflow',
+            'artifact'       => 'required|file|max:102400',
+            'commit_sha'     => 'nullable|string|max:40',
+            'commit_message' => 'nullable|string|max:500',
+            'triggered_by'   => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['error' => 'Invalid request', 'details' => $validator->errors()], 422);
-        }
-
-        if (! $this->verifySecret($project, $request->input('secret'))) {
-            Log::warning("Invalid webhook secret for project {$project->id}");
-
-            return response()->json(['error' => 'Invalid secret'], 401);
         }
 
         $artifactFile = $request->file('artifact');
@@ -52,32 +52,21 @@ class ReceiveArtifactController extends Controller
         }
 
         $allowedMimes = ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'];
-        if (! in_array($artifactFile->getMimeType(), $allowedMimes, true)) {
+        if (!in_array($artifactFile->getMimeType(), $allowedMimes, true)) {
             return response()->json(['message' => 'Invalid artifact MIME type.'], 422);
         }
-
-        $commitSha = $request->input('commit_sha');
-        $branch = $request->input('branch');
-        $trigger = $request->input('trigger') === 'workflow'
-            ? Deployment::TRIGGER_WORKFLOW
-            : Deployment::TRIGGER_WEBHOOK;
 
         $deployment = $this->deploymentService->receiveArtifacts(
             $project,
             $artifactFile ? [$artifactFile] : [],
-            $commitSha,
-            $branch,
-            $trigger
+            $request->input('commit_sha'),
+            $request->input('commit_message'),
+            $request->input('triggered_by'),
         );
 
         return response()->json([
-            'message' => 'Deployment started',
+            'message'       => 'Deployment started',
             'deployment_id' => $deployment->id,
         ], 202);
-    }
-
-    private function verifySecret(Project $project, string $secret): bool
-    {
-        return hash_equals($project->webhook_secret, $secret);
     }
 }

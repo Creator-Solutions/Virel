@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { Eye, EyeOff, Info, AlertTriangle } from 'lucide-react';
 
 import { TextInput } from '@/src/components/atoms/text-input';
@@ -20,9 +20,16 @@ const FRAMEWORK_OPTIONS = [
   { value: 'wordpress', label: 'WordPress' },
 ];
 
+const ENVIRONMENT_OPTIONS = [
+  { value: 'production', label: 'Production' },
+  { value: 'staging', label: 'Staging' },
+  { value: 'development', label: 'Development' },
+];
+
 function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true }: CreateProjectFormProps) {
   const [formData, setFormData] = useState({
     name: '',
+    environment: 'production',
     public_url: '',
     deploy_path: '',
     github_owner: '',
@@ -66,28 +73,43 @@ function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true 
     <div className="mx-auto max-w-3xl">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-virel-text">Create Project</h1>
-        <p className="mt-1 text-sm text-virel-textSecondary">Configure a new project for automated deployments.</p>
+        <p className="mt-1 text-sm text-virel-textSecondary">
+          Configure a new project for automated deployments.
+        </p>
       </div>
 
       <form className="space-y-8">
+
         {/* General Section */}
         <section>
           <h2 className="mb-4 text-lg font-medium text-virel-text">General</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <FormLabel htmlFor="name" className="mb-1 block">
-                Project Name
-              </FormLabel>
-              <TextInput
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="e.g. acme-marketing-site"
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
+            <div className="flex flex-col gap-1.5">
+            <FormLabel htmlFor="name">
+              Project Name
+            </FormLabel>
+            <TextInput
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="e.g. acme-marketing-site"
+            />
+            <FormError message={errors.name} />
+          </div>
+            <div className="flex flex-col">
+              <SelectField
+                id="environment"
+                name="environment"
+                label="Environment"
+                value={formData.environment}
+                onChange={handleSelectChange}
+                options={ENVIRONMENT_OPTIONS}
+                placeholder="Select environment"
+                error={errors.environment}
               />
-              <FormError message={errors.name} />
             </div>
-            <div>
+            <div className="col-span-1 sm:col-span-2">
               <FormLabel htmlFor="public_url" className="mb-1 block" optional>
                 Public URL
               </FormLabel>
@@ -262,15 +284,14 @@ function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true 
                 </p>
                 <a
                   href="/home/settings"
-                  className="mt-1 text-sm font-medium text-yellow-400 underline underline-offset-2 hover:text-yellow-300"
-                >
+                  className="mt-1 text-sm font-medium text-yellow-400 underline underline-offset-2 hover:text-yellow-300">
                   Configure Instance URL in Settings →
                 </a>
               </div>
             </div>
           )}
 
-          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <FormLabel htmlFor="github_owner" className="mb-1 block">
                 Owner / Organization
@@ -297,9 +318,6 @@ function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true 
               />
               <FormError message={errors.github_repo} />
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <FormLabel htmlFor="github_branch" className="mb-1 block">
                 Branch
@@ -336,7 +354,8 @@ function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true 
                 </button>
               </div>
               <p className="mt-2 text-sm text-virel-textSecondary">
-                Personal access token. Required scopes: <span className="font-mono text-xs">repo</span>
+                Personal access token. Required scopes:{' '}
+                <span className="font-mono text-xs">repo, secrets</span>
               </p>
               <FormError message={errors.github_pat} />
             </div>
@@ -348,8 +367,8 @@ function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true 
           <div className="flex gap-3 rounded-md border border-virel-border bg-virel-surface p-4">
             <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-virel-textSecondary" />
             <p className="text-sm text-virel-textSecondary">
-              A webhook secret will be auto-generated after project creation. You can then add it to your GitHub
-              repository settings to enable automatic deployments on push.
+              A webhook secret will be auto-generated after project creation. You can then add it to your
+              GitHub repository settings to enable automatic deployments on push.
             </p>
           </div>
         </SectionDivider>
@@ -362,6 +381,7 @@ function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true 
             Create Project
           </button>
         </div>
+
       </form>
     </div>
   );

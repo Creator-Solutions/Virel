@@ -7,6 +7,7 @@ type AlertVariant = 'success' | 'error' | 'warning' | 'info';
 interface AlertBannerProps {
   variant?: AlertVariant;
   children: ReactNode;
+  className?: string;
 }
 
 const variantStyles = {
@@ -23,11 +24,13 @@ const variantIcons = {
   info: Info,
 };
 
-function AlertBanner({ variant = 'info', children }: AlertBannerProps) {
+function AlertBanner({ variant = 'info', children, className }: AlertBannerProps) {
   const Icon = variantIcons[variant];
 
   return (
-    <div className={`mb-4 flex items-start gap-3 rounded-md border p-3 text-sm ${variantStyles[variant]}`}>
+    <div
+      className={`mb-4 flex items-start gap-3 rounded-md border p-3 text-sm ${variantStyles[variant]} ${className || ''}`}
+    >
       <Icon className="mt-0.5 h-5 w-5 flex-shrink-0" />
       <div>{children}</div>
     </div>

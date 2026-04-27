@@ -2,6 +2,7 @@ export interface Project {
   id: string;
   user_id: string;
   name: string;
+  environment: 'development' | 'staging' | 'production';
   deploy_path: string;
   public_url: string | null;
   github_owner: string;

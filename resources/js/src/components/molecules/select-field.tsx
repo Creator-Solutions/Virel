@@ -1,13 +1,15 @@
 import * as React from 'react';
 
 import { FormField } from './form-field';
-import { SelectInput, type SelectInputProps } from '@/src/components/atoms/select-input';
+import { SelectInput  } from '@/src/components/atoms/select-input';
+import type {SelectInputProps} from '@/src/components/atoms/select-input';
 
 interface SelectFieldProps extends Omit<SelectInputProps, 'className'> {
   label: string;
   error?: string;
   optional?: boolean;
   hint?: string;
+  className?: string;
 }
 
 function SelectField({
@@ -15,6 +17,7 @@ function SelectField({
   error,
   optional,
   hint,
+  className,
   id,
   name,
   value,
@@ -36,6 +39,7 @@ function SelectField({
         options={options}
         placeholder={placeholder}
         disabled={disabled}
+        className={className}
         {...props}
       />
     </FormField>

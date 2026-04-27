@@ -2,12 +2,15 @@
 
 namespace App\Infrastructure\Persistence\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 class Project extends Model
 {
@@ -16,6 +19,7 @@ class Project extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'environment',
         'deploy_path',
         'public_url',
         'github_owner',
@@ -30,8 +34,6 @@ class Project extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'github_setup_pending' => 'boolean',
-        'github_pat' => 'encrypted',
-        'webhook_secret' => 'encrypted',
     ];
 
     public function user(): BelongsTo
@@ -72,5 +74,49 @@ class Project extends Model
     public function hasTwoArtifacts(): bool
     {
         return $this->framework_type === 'laravel';
+    }
+
+    public function getGithubPatAttribute(string $value): string
+    {
+        if (empty($value)) {
+            return '';
+        }
+
+        try {
+            return Crypt::decryptString($value);
+        } catch (DecryptException $e) {
+            Log::warning('Failed to decrypt github_pat. APP_KEY may have changed.', [
+                'project_id' => $this->id,
+            ]);
+
+            return '****DECRYPTION_ERROR****';
+        }
+    }
+
+    public function getWebhookSecretAttribute(string $value): string
+    {
+        if (empty($value)) {
+            return '';
+        }
+
+        try {
+            return Crypt::decryptString($value);
+        } catch (DecryptException $e) {
+            Log::warning('Failed to decrypt webhook_secret. APP_KEY may have changed.', [
+                'project_id' => $this->id,
+            ]);
+
+            return '****DECRYPTION_ERROR****';
+        }
+    }
+
+    public function setGithubPatAttribute(string $value): void
+    {
+        $this->attributes['github_pat'] = $value ? Crypt::encryptString($value) : '';
+    }
+
+    public function setWebhookSecretAttribute(string $value): void
+    {
+        $this->attributes['webhook_secret'] = $value ? Crypt::encryptString($value) : '';
     }
 }

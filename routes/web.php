@@ -5,6 +5,10 @@ use App\Http\Controllers\Api\Auth\CreateSessionController;
 use App\Http\Controllers\Api\Auth\GithubSessionCallbackController;
 use App\Http\Controllers\Api\Deployments\GetDeploymentController;
 use App\Http\Controllers\Api\Deployments\GetDeploymentLogController;
+use App\Http\Controllers\Api\EnvVariables\DeleteEnvVariableController;
+use App\Http\Controllers\Api\EnvVariables\RevealEnvVariableController;
+use App\Http\Controllers\Api\EnvVariables\StoreEnvVariableController;
+use App\Http\Controllers\Api\EnvVariables\UpdateEnvVariableController;
 use App\Http\Controllers\Api\Projects\DeleteProjectController;
 use App\Http\Controllers\Api\Projects\DeploymentController;
 use App\Http\Controllers\Api\Projects\RegenerateWebhookSecretController;
@@ -23,21 +27,35 @@ use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\Auth\ResetPasswordController;
 use App\Http\Controllers\Web\Home\CreateProjectController;
 use App\Http\Controllers\Web\Home\DashboardController;
-use App\Http\Controllers\Web\Home\InstallController;
 use App\Http\Controllers\Web\Home\DeploymentDetailController;
 use App\Http\Controllers\Web\Home\DeploymentHistoryController;
 use App\Http\Controllers\Web\Home\EditUserController;
 use App\Http\Controllers\Web\Home\EnvVarsController;
+use App\Http\Controllers\Web\Home\InstallController;
 use App\Http\Controllers\Web\Home\ProjectDetailController;
 use App\Http\Controllers\Web\Home\ProjectsController;
 use App\Http\Controllers\Web\Home\ProjectSettingsController;
 use App\Http\Controllers\Web\Home\SettingsController;
 use App\Http\Controllers\Web\Home\StoreProjectController;
 use App\Http\Controllers\Web\Home\UsersController;
+use App\Infrastructure\Persistence\Models\Project;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', InstallController::class)->name('install');
-Route::post('/', InstallController::class)->name('install.post');
+Route::get('/', function () {
+    if (file_exists(base_path('.installed'))) {
+        return redirect()->route('login');
+    }
+
+    return app(InstallController::class)();
+})->name('home');
+
+Route::post('/', function () {
+    if (file_exists(base_path('.installed'))) {
+        return redirect()->route('login');
+    }
+
+    return app(InstallController::class)();
+})->name('install.post');
 Route::get('/login', LoginController::class)->name('login');
 Route::get('/forgot-password', ForgotPasswordController::class)->name('web.auth.forgot-password');
 Route::get('/reset-password', ResetPasswordController::class)->name('web.auth.reset-password');
@@ -75,7 +93,7 @@ Route::get('/home/projects/{id}/deployments/{deploymentId}/log', GetDeploymentLo
 Route::get('/home/projects/{id}/deployments/{deploymentId}', DeploymentDetailController::class)
     ->name('home.projects.deployments.show')
     ->middleware(['auth']);
-Route::get('/home/projects/{id}/env', EnvVarsController::class)
+Route::get('/home/projects/{id}/env/{variableId?}', EnvVarsController::class)
     ->name('home.projects.env')
     ->middleware(['auth']);
 Route::get('/home/users', UsersController::class)
@@ -93,6 +111,12 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/home/projects/{id}', UpdateProjectController::class)->name('home.projects.update');
     Route::post('/home/projects/{id}/regenerate-secret', RegenerateWebhookSecretController::class)->name('home.projects.regenerate-secret');
     Route::delete('/home/projects/{id}', DeleteProjectController::class)->name('home.projects.delete');
+
+    Route::post('/home/projects/{id}/env', StoreEnvVariableController::class)->name('home.projects.env.store');
+    Route::patch('/home/projects/{id}/env/{variableId}', UpdateEnvVariableController::class)->name('home.projects.env.update');
+    Route::delete('/home/projects/{id}/env/{variableId}', DeleteEnvVariableController::class)->name('home.projects.env.destroy');
+    Route::get('/home/projects/{id}/env/{variableId}/reveal', RevealEnvVariableController::class)->name('home.projects.env.reveal');
+
     Route::get('/api/projects/{id}/deployments', [DeploymentController::class, 'index'])->name('home.projects.deployments.index');
     Route::post('/api/projects/{id}/artifacts/{artifactId}/rollback', [DeploymentController::class, 'rollback'])->name('home.projects.artifacts.rollback');
     Route::get('/home/projects/{id}/deployments/{deploymentId}/data', GetDeploymentController::class)->name('home.projects.deployments.data');
@@ -108,8 +132,4 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/home/settings/notifications', UpdateNotificationController::class)->name('home.settings.notifications.update');
     Route::get('/home/settings/data', [GetSettingsController::class, '__invoke'])->name('home.settings.data');
     Route::patch('/home/settings', [UpdateSettingsController::class, '__invoke'])->name('home.settings.update');
-});
-
-Route::get('sanctum/csrf-cookie', function () {
-    return response()->json(['csrf_token' => csrf_token()]);
 });

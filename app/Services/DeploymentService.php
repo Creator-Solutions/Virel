@@ -24,6 +24,10 @@ class DeploymentService
     ?string $commitMessage = null,
     ?string $triggeredBy = null,
     ): Deployment {
+        $trigger = $triggeredBy
+            ? Deployment::TRIGGER_WORKFLOW
+            : Deployment::TRIGGER_WEBHOOK;
+
         $deployment = Deployment::create([
             'project_id'     => $project->id,
             'status'         => Deployment::STATUS_RUNNING,
@@ -92,7 +96,7 @@ class DeploymentService
             $this->notifyUser($deployment);
 
         } catch (\Exception $e) {
-            $log[] = 'ERROR: '.$e->getMessage();
+            $this->writeLog($log, 'ERROR: '.$e->getMessage());
             $deployment->update([
                 'status' => Deployment::STATUS_FAILED,
                 'completed_at' => now(),
@@ -160,6 +164,289 @@ class DeploymentService
                 report($e);
             }
         }
+    }
+
+    private function deployArtifact(Project $project, string $extractDir, array &$log): void
+    {
+        $artifactDir = $extractDir.'/artifact';
+
+        if (! File::exists($artifactDir)) {
+            $artifactDir = $extractDir;
+            $this->writeLog($log, 'No artifact/ wrapper found, using extract root');
+        }
+
+        $publicHtmlSource = $artifactDir.'/public_html';
+        $appRootSource = $artifactDir.'/app_root';
+
+        if (! File::exists($publicHtmlSource)) {
+            $contents = File::exists($artifactDir)
+                ? implode(', ', array_map('basename', File::directories($artifactDir)))
+                : 'none';
+            throw new \RuntimeException(
+                "Artifact is missing required public_html/ directory. Found: {$contents}"
+            );
+        }
+
+        if (! $this->isPathSafe($project->deploy_path)) {
+            throw new \RuntimeException("Deploy path '{$project->deploy_path}' is not permitted.");
+        }
+
+        $this->ensureDirectoryExists($project->deploy_path);
+        $this->syncDirectory($publicHtmlSource, $project->deploy_path, $log);
+        $this->writeLog($log, "Deployed public_html → {$project->deploy_path}");
+
+        $buildSource = $publicHtmlSource.'/build';
+
+        if ($project->framework_type === 'laravel') {
+            if (empty($project->app_root_path)) {
+                throw new \RuntimeException('Laravel project is missing app_root_path configuration.');
+            }
+
+            if (! File::exists($appRootSource)) {
+                throw new \RuntimeException('Artifact is missing required app_root/ directory for Laravel project.');
+            }
+
+            if (! $this->isPathSafe($project->app_root_path)) {
+                throw new \RuntimeException("App root path '{$project->app_root_path}' is not permitted.");
+            }
+
+            $this->ensureDirectoryExists($project->app_root_path);
+            $this->syncDirectory($appRootSource, $project->app_root_path, $log);
+            $this->writeLog($log, "Deployed app_root → {$project->app_root_path}");
+
+            $publicBuildFolder = rtrim($project->app_root_path, '/').'/public/build';
+            $this->ensureDirectoryExists($publicBuildFolder);
+            if (File::exists($buildSource)) {
+                $this->syncDirectory($buildSource, $publicBuildFolder, $log);
+                $this->writeLog($log, "Deployed build → {$publicBuildFolder}");
+            }
+
+            $this->patchIndexPhp($project, $log);
+            $this->writeEnvFile($project, $log);
+        }
+
+        if ($project->framework_type === 'react-vite') {
+            $project->load('environmentVariables');
+            if ($project->environmentVariables->isNotEmpty()) {
+                $this->writeEnvFile($project, $log);
+            }
+        }
+    }
+
+    private function patchIndexPhp(Project $project, array &$log): void
+    {
+        $indexPath = $project->deploy_path.'/index.php';
+
+        if (! File::exists($indexPath)) {
+            $this->writeLog($log, "WARNING: index.php not found at {$indexPath} — skipping patch");
+
+            return;
+        }
+
+        $projectName = basename(rtrim($project->app_root_path, '/'));
+
+        $patched = <<<PHP
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+\$laravelRoot = dirname(__DIR__) . '/{$projectName}';
+
+if (file_exists(\$maintenance = \$laravelRoot . '/storage/framework/maintenance.php')) {
+    require \$maintenance;
+}
+
+require \$laravelRoot . '/vendor/autoload.php';
+
+/** @var Application \$app */
+\$app = require_once \$laravelRoot . '/bootstrap/app.php';
+
+\$app->handleRequest(Request::capture());
+PHP;
+
+        File::put($indexPath, $patched);
+        $this->writeLog($log, "Patched index.php → laravel_root: {$projectName}");
+    }
+
+    private function writeEnvFile(Project $project, array &$log): void
+    {
+        $envDir = $project->framework_type === 'laravel'
+            ? $project->app_root_path
+            : $project->deploy_path;
+
+        if (empty($envDir)) {
+            $this->writeLog($log, 'WARNING: Cannot write .env — deploy path not configured');
+
+            return;
+        }
+
+        $envPath = rtrim($envDir, '/').'/.env';
+        $examplePath = rtrim($envDir, '/').'/.env.example';
+
+        if (! File::exists($examplePath)) {
+            $this->generateEnvExample($project, $examplePath, $log);
+        }
+
+        $envLines = file($examplePath, FILE_IGNORE_NEW_LINES) ?: [];
+        $this->writeLog($log, 'Loaded .env.example as base template');
+
+        $existingKeys = [];
+        foreach ($envLines as $line) {
+            if (str_contains($line, '=') && ! str_starts_with(trim($line), '#')) {
+                [$key] = explode('=', $line, 2);
+                $existingKeys[trim($key)] = true;
+            }
+        }
+
+        if ($project->framework_type === 'laravel' && ! empty($project->public_url)) {
+            $appUrl = rtrim($project->public_url, '/');
+            if (isset($existingKeys['APP_URL'])) {
+                foreach ($envLines as $i => $line) {
+                    if (str_starts_with($line, 'APP_URL=')) {
+                        $envLines[$i] = "APP_URL={$appUrl}";
+                        break;
+                    }
+                }
+            } else {
+                $envLines[] = "APP_URL={$appUrl}";
+            }
+            $existingKeys['APP_URL'] = true;
+            $this->writeLog($log, "Set APP_URL to {$appUrl}");
+        }
+
+        $project->load('environmentVariables');
+
+        foreach ($project->environmentVariables as $envVar) {
+            try {
+                $key = $envVar->key;
+                $value = $envVar->value;
+
+                if (preg_match('/[\s#"\'\\\\]/', $value)) {
+                    $value = '"'.addslashes($value).'"';
+                }
+
+                if (isset($existingKeys[$key])) {
+                    foreach ($envLines as $i => $line) {
+                        if (str_starts_with($line, $key.'=')) {
+                            $envLines[$i] = "{$key}={$value}";
+                            break;
+                        }
+                    }
+                } else {
+                    $envLines[] = "{$key}={$value}";
+                }
+
+                $existingKeys[$key] = true;
+            } catch (\Exception $e) {
+                $this->writeLog($log, "WARNING: Could not decrypt env variable {$envVar->key} — skipping");
+            }
+        }
+
+        File::put($envPath, implode(PHP_EOL, $envLines).PHP_EOL);
+        $this->writeLog($log, "Written .env to {$envPath} with ".count($project->environmentVariables).' environment variables');
+    }
+
+    private function generateEnvExample(Project $project, string $examplePath, array &$log): void
+    {
+        $template = match ($project->framework_type) {
+            'laravel' => $this->getLaravelEnvExample(),
+            'react-vite' => $this->getReactEnvExample(),
+            default => $this->getLaravelEnvExample(),
+        };
+
+        File::put($examplePath, $template);
+        $this->writeLog($log, "Generated .env.example template for {$project->framework_type}");
+    }
+
+    private function getLaravelEnvExample(): string
+    {
+        return <<<'ENV'
+APP_NAME=Virel
+APP_ENV=production
+APP_KEY=
+APP_DEBUG=false
+APP_URL=http://localhost
+
+LOG_CHANNEL=stack
+LOG_LEVEL=debug
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=virel
+DB_USERNAME=root
+DB_PASSWORD=
+
+BROADCAST_DRIVER=log
+CACHE_DRIVER=file
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=smtp
+MAIL_HOST=mailpit
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+VITE_APP_URL="${APP_URL}"
+ENV;
+    }
+
+    private function getReactEnvExample(): string
+    {
+        return <<<'ENV'
+VITE_APP_NAME=Virel
+VITE_API_URL=http://localhost/api
+VITE_APP_URL=http://localhost
+NODE_ENV=production
+ENV;
+    }
+
+    private function writeLog(array &$log, string $message): void
+    {
+        $line = '['.now()->toDateTimeString().'] '.$message;
+        $log[] = $line;
+    }
+
+    private function syncDirectory(string $source, string $destination, array &$log): void
+    {
+        $files = File::allFiles($source);
+
+        foreach ($files as $file) {
+            $relativePath = $file->getRelativePathname();
+            $destPath = rtrim($destination, '/').'/'.$relativePath;
+
+            $destDir = dirname($destPath);
+            if (! File::exists($destDir)) {
+                File::makeDirectory($destDir, 0755, true);
+            }
+
+            if (File::exists($destPath)) {
+                File::delete($destPath);
+            }
+            File::copy($file->getPathname(), $destPath);
+        }
+
+        $dirs = File::allDirectories($source);
+        foreach ($dirs as $dir) {
+            $relativeDir = str_replace($source.'/', '', $dir);
+            $destDir = rtrim($destination, '/').'/'.$relativeDir;
+            File::ensureDirectoryExists($destDir);
+        }
+
+        $this->writeLog($log, 'Synced '.count($files)." files from {$source} to {$destination}");
     }
 
     private function saveArtifact(Deployment $deployment, UploadedFile $artifact): Artifact
@@ -237,28 +524,6 @@ class DeploymentService
         Log::info("Extracted artifact {$artifact->id} to {$extractDir}");
     }
 
-    private function getDeployPaths(Project $project): array
-    {
-        $paths = [];
-
-        $deployPath = $project->deploy_path;
-        if (! empty($deployPath)) {
-            if (! $this->isPathSafe($deployPath)) {
-                throw new \RuntimeException("Deploy path '{$deployPath}' is not permitted.");
-            }
-            $paths[] = $deployPath;
-        }
-
-        if ($project->hasTwoArtifacts() && ! empty($project->app_root_path)) {
-            if (! $this->isPathSafe($project->app_root_path)) {
-                throw new \RuntimeException("App root path '{$project->app_root_path}' is not permitted.");
-            }
-            $paths[] = $project->app_root_path;
-        }
-
-        return $paths;
-    }
-
     private function isPathSafe(string $path): bool
     {
         $virelRoot = realpath(base_path());
@@ -297,34 +562,6 @@ class DeploymentService
         if (! File::exists($path)) {
             File::makeDirectory($path, 0755, true);
         }
-    }
-
-    private function copyExtractedFiles(string $source, string $destination, array &$log): void
-    {
-        $files = File::allFiles($source);
-
-        foreach ($files as $file) {
-            $relativePath = $file->getRelativePathname();
-            $targetPath = $destination.'/'.$relativePath;
-
-            $targetDir = dirname($targetPath);
-            if (! File::exists($targetDir)) {
-                File::makeDirectory($targetDir, 0755, true);
-            }
-
-            if ($file->isDir()) {
-                if (! File::exists($targetPath)) {
-                    File::makeDirectory($targetPath, 0755, true);
-                }
-            } else {
-                if (File::exists($targetPath)) {
-                    File::delete($targetPath);
-                }
-                File::copy($file->getPathname(), $targetPath);
-            }
-        }
-
-        $log[] = "Copied files from {$source} to {$destination}";
     }
 
     private function cleanupExtractDirectory(string $path): void

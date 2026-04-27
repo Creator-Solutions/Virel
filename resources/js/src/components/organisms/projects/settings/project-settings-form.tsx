@@ -21,6 +21,7 @@ interface ProjectSettingsFormProps {
 function ProjectSettingsForm({ project, errors = {} }: ProjectSettingsFormProps) {
   const [formData, setFormData] = useState({
     name: project.name || '',
+    environment: project.environment || 'production',
     public_url: project.public_url || '',
     deploy_path: project.deploy_path || '',
     github_owner: project.github_owner || '',

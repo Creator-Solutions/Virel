@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { TextField } from '@/src/components/molecules/text-field';
 import { SelectField } from '@/src/components/molecules/select-field';
@@ -13,31 +13,17 @@ interface EmailSettingsFormProps {
 }
 
 function EmailSettingsForm({ mailSettings, onSubmit, isLoading }: EmailSettingsFormProps) {
-  const [formData, setFormData] = useState<MailSettings>({
-    MAIL_HOST: '',
-    MAIL_PORT: '',
-    MAIL_USERNAME: '',
-    MAIL_PASSWORD: '',
-    MAIL_ENCRYPTION: '',
-    MAIL_FROM_ADDRESS: '',
-    MAIL_FROM_NAME: '',
-  });
+  const [formData, setFormData] = useState<MailSettings>(() => ({
+    MAIL_HOST: mailSettings.MAIL_HOST || '',
+    MAIL_PORT: mailSettings.MAIL_PORT || '',
+    MAIL_USERNAME: mailSettings.MAIL_USERNAME || '',
+    MAIL_PASSWORD: mailSettings.MAIL_PASSWORD || '',
+    MAIL_ENCRYPTION: mailSettings.MAIL_ENCRYPTION || '',
+    MAIL_FROM_ADDRESS: mailSettings.MAIL_FROM_ADDRESS || '',
+    MAIL_FROM_NAME: mailSettings.MAIL_FROM_NAME || '',
+  }));
   const [showPassword, setShowPassword] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
-
-  useEffect(() => {
-    if (mailSettings) {
-      setFormData({
-        MAIL_HOST: mailSettings.MAIL_HOST || '',
-        MAIL_PORT: mailSettings.MAIL_PORT || '',
-        MAIL_USERNAME: mailSettings.MAIL_USERNAME || '',
-        MAIL_PASSWORD: mailSettings.MAIL_PASSWORD || '',
-        MAIL_ENCRYPTION: mailSettings.MAIL_ENCRYPTION || '',
-        MAIL_FROM_ADDRESS: mailSettings.MAIL_FROM_ADDRESS || '',
-        MAIL_FROM_NAME: mailSettings.MAIL_FROM_NAME || '',
-      });
-    }
-  }, [mailSettings]);
 
   const handleChange = (field: keyof MailSettings) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const value = e.target.value;

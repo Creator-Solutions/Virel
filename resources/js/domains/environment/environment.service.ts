@@ -17,6 +17,7 @@ class EnvironmentService {
     }
 
     const data: EnvVariablesResponse = await response.json();
+    
     return data.data;
   }
 
@@ -33,10 +34,12 @@ class EnvironmentService {
 
     if (!response.ok) {
       const error = await response.json();
+
       throw new Error(error.message || 'Failed to create environment variable');
     }
 
     const data = await response.json();
+
     return data.data;
   }
 
@@ -53,10 +56,12 @@ class EnvironmentService {
 
     if (!response.ok) {
       const error = await response.json();
+
       throw new Error(error.message || 'Failed to update environment variable');
     }
 
     const data = await response.json();
+
     return data.data;
   }
 
@@ -87,6 +92,7 @@ class EnvironmentService {
 
     if (!response.ok) {
       const error = await response.json();
+
       throw new Error(error.message || 'Failed to upload SQL file');
     }
   }
@@ -103,6 +109,7 @@ class EnvironmentService {
 
     if (!response.ok) {
       const error = await response.json();
+
       throw new Error(error.message || 'Failed to import database');
     }
   }

@@ -14,7 +14,7 @@ interface FormFieldProps {
 
 function FormField({ label, htmlFor, error, optional, children, hint }: FormFieldProps) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col">
       <FormLabel htmlFor={htmlFor} optional={optional}>
         {label}
       </FormLabel>

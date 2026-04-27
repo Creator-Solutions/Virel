@@ -1,4 +1,4 @@
-import { Play, GitBranch, Settings, ExternalLink } from 'lucide-react';
+import { Play, GitBranch, Settings, ExternalLink, Variable } from 'lucide-react';
 
 import { Button } from '@/src/components/atoms/button';
 import { Spinner } from '@/src/components/atoms/spinner';
@@ -63,11 +63,11 @@ function ProjectDetailHeader({ project, isDeploying, onDeploy, onNavigate }: Pro
         <Button variant="outline" onClick={() => onNavigate(`${project.id}/deployments`)}>
           View History
         </Button>
-        <Button
-          size="icon-sm"
-          onClick={() => onNavigate(`${project.id}/settings`)}
-          className="cursor-pointer"
-        >
+        <Button variant="outline" onClick={() => onNavigate(`/home/projects/${project.id}/env`)}>
+          <Variable className="mr-2 h-4 w-4" />
+          Env Variables
+        </Button>
+        <Button size="icon-sm" onClick={() => onNavigate(`${project.id}/settings`)} className="cursor-pointer">
           <Settings className="h-4 w-4 text-virel-text" />
         </Button>
       </div>

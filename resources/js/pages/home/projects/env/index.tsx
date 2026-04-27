@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { router, usePage } from '@inertiajs/react';
-import { Plus, Trash2, Edit2, Eye, EyeOff, X, Database, AlertCircle } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
+import { Plus, Trash2, Edit2, Eye, EyeOff, Database, AlertCircle } from 'lucide-react';
 
 import type { Project } from '@/domains/projects/projects.types';
 import { environmentService } from '@/domains/environment/environment.service';
@@ -51,15 +51,18 @@ const EnvVarsPage = () => {
 
   const handleAdd = async () => {
     const validation = envVarInputSchema.safeParse(newVar);
+
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
       validation.error.issues.forEach((issue) => {
         const path = issue.path[0];
+
         if (path) {
           fieldErrors[path as string] = issue.message;
         }
       });
       setErrors(fieldErrors);
+
       return;
     }
 
@@ -120,6 +123,7 @@ const EnvVarsPage = () => {
 
   const dbVars = REQUIRED_DB_VARS.map((key) => {
     const existing = envVars.find((v) => v.key === key);
+
     return { key, value: existing?.value || '', exists: !!existing };
   });
 

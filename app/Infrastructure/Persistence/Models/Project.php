@@ -59,6 +59,11 @@ class Project extends Model
         return $this->hasMany(Artifact::class)->orderBy('created_at', 'desc')->limit(5);
     }
 
+    public function environmentVariables(): HasMany
+    {
+        return $this->hasMany(EnvironmentVariable::class);
+    }
+
     public function hasGithubSetup(): bool
     {
         return ! empty($this->github_hook_id) && ! $this->github_setup_pending;

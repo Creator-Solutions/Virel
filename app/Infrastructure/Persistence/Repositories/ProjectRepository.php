@@ -59,7 +59,7 @@ class ProjectRepository implements IProjectRepository
             'github_repo' => $data['github_repo'],
             'github_branch' => $data['github_branch'] ?? 'main',
             'github_pat' => $data['github_pat'] ?? null,
-            'webhook_secret' => Hash::make(Str::random(32)),
+            'webhook_secret' => Str::random(32),
             'is_active' => true,
             'framework_type' => $data['framework_type'],
             'app_root_path' => $data['app_root_path'] ?? null,
@@ -69,13 +69,13 @@ class ProjectRepository implements IProjectRepository
     public function update(Project $project, array $data): Project
     {
         $project->update([
-            'name' => $data['name'],
-            'public_url' => $data['public_url'] ?? null,
-            'deploy_path' => $data['deploy_path'],
-            'github_owner' => $data['github_owner'],
-            'github_repo' => $data['github_repo'],
-            'github_branch' => $data['github_branch'] ?? 'main',
-            'github_pat' => $data['github_pat'] ?? null,
+            'name' => $data['name'] ?? $project->name,
+            'public_url' => $data['public_url'] ?? $project->public_url,
+            'deploy_path' => $data['deploy_path'] ?? $project->deploy_path,
+            'github_owner' => $data['github_owner'] ?? $project->github_owner,
+            'github_repo' => $data['github_repo'] ?? $project->github_repo,
+            'github_branch' => $data['github_branch'] ?? $project->github_branch,
+            'github_pat' => $data['github_pat'] ?? $project->github_pat,
             'framework_type' => $data['framework_type'] ?? $project->framework_type,
             'app_root_path' => $data['app_root_path'] ?? $project->app_root_path,
         ]);

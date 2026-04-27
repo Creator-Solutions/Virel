@@ -52,7 +52,14 @@ class DeploymentController extends Controller
 
         $artifact->update(['deployment_id' => $deployment->id]);
 
-        $deploymentService->processDeployment($deployment);
+        try {
+            $deploymentService->processDeployment($deployment);
+        }
+        catch (\Exception $e) {
+            report($e);
+
+            return response()->json(['error' => 'Rollback failed. Please check the deployment logs for details.'], 500);
+        }
 
         return response()->json([
             'deployment' => [

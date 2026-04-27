@@ -34,7 +34,7 @@ function RecentDeploymentsTable({ deployments, projectId, onNavigate }: RecentDe
           {deployments.map((deployment) => (
             <tr
               key={deployment.id}
-              onClick={() => onNavigate(`home/projects/${projectId}/deployments/${deployment.id}`)}
+              onClick={() => onNavigate(`/home/projects/${projectId}/deployments/${deployment.id}`)}
               className="cursor-pointer transition-colors hover:bg-virel-base/50"
             >
               <td className="px-6 py-4">

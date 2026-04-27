@@ -33,4 +33,25 @@ export interface UpdateNotificationPayload {
 
 export interface SiteSettings {
   virel_url: string;
+  mail?: MailSettings;
+}
+
+export interface MailSettings {
+  MAIL_HOST: string;
+  MAIL_PORT: string | number;
+  MAIL_USERNAME: string;
+  MAIL_PASSWORD: string;
+  MAIL_ENCRYPTION: 'tls' | 'ssl' | 'none' | '';
+  MAIL_FROM_ADDRESS: string;
+  MAIL_FROM_NAME: string;
+}
+
+export interface UpdateMailPayload {
+  MAIL_HOST?: string;
+  MAIL_PORT?: number | string | undefined;
+  MAIL_USERNAME?: string;
+  MAIL_PASSWORD?: string;
+  MAIL_ENCRYPTION?: 'tls' | 'ssl' | 'none' | '';
+  MAIL_FROM_ADDRESS?: string;
+  MAIL_FROM_NAME?: string;
 }

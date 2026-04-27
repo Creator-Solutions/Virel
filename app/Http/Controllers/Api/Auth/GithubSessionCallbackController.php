@@ -80,5 +80,11 @@ class GithubSessionCallbackController extends Controller
             return redirect()->route('web.auth.login')
                 ->withErrors(['message' => $e->getMessage()]);
         }
+        catch (\Exception $e) {
+            report($e);
+
+            return redirect()->route('web.auth.login')
+                ->withErrors(['message' => 'GitHub authentication failed. Please try again.']);
+        }
     }
 }

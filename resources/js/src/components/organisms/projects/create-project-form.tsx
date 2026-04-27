@@ -31,8 +31,14 @@ function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true 
     github_pat: '',
     framework_type: '',
     app_root_path: '',
+    db_name: '',
+    db_user: '',
+    db_password: '',
+    db_host: 'localhost',
+    db_prefix: 'wp_',
   });
   const [showPat, setShowPat] = useState(false);
+  const [showDbPassword, setShowDbPassword] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -50,7 +56,9 @@ function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true 
 
   const handleSubmit = () => {
     router.post('/home/projects/create', formData, {
-      onError: () => {},
+      onError: (errors) => {
+        console.error('Project creation failed:', errors);
+      },
     });
   };
 
@@ -153,6 +161,95 @@ function CreateProjectForm({ onCancel, errors = {}, virel_url_configured = true 
             )}
           </div>
         </SectionDivider>
+
+        {formData.framework_type === 'wordpress' && (
+          <SectionDivider heading="Database Configuration">
+            <div className="mb-4 rounded-md border border-blue-500/30 bg-blue-500/10 p-4">
+              <p className="text-sm text-blue-200">
+                Enter your WordPress database credentials. These will be stored as encrypted environment variables.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <FormLabel htmlFor="db_name" className="mb-1 block">
+                  Database Name
+                </FormLabel>
+                <TextInput
+                  id="db_name"
+                  name="db_name"
+                  value={formData.db_name}
+                  onChange={handleChange}
+                  placeholder="your_wordpress_db"
+                />
+                <FormError message={errors.db_name} />
+              </div>
+              <div>
+                <FormLabel htmlFor="db_host" className="mb-1 block">
+                  Database Host
+                </FormLabel>
+                <TextInput
+                  id="db_host"
+                  name="db_host"
+                  value={formData.db_host}
+                  onChange={handleChange}
+                  placeholder="localhost"
+                />
+                <FormError message={errors.db_host} />
+              </div>
+              <div>
+                <FormLabel htmlFor="db_user" className="mb-1 block">
+                  Database User
+                </FormLabel>
+                <TextInput
+                  id="db_user"
+                  name="db_user"
+                  value={formData.db_user}
+                  onChange={handleChange}
+                  placeholder="your_db_user"
+                />
+                <FormError message={errors.db_user} />
+              </div>
+              <div>
+                <FormLabel htmlFor="db_password" className="mb-1 block">
+                  Database Password
+                </FormLabel>
+                <div className="relative">
+                  <TextInput
+                    id="db_password"
+                    name="db_password"
+                    type={showDbPassword ? 'text' : 'password'}
+                    value={formData.db_password}
+                    onChange={handleChange}
+                    placeholder="your_password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDbPassword(!showDbPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-virel-textMuted hover:text-virel-text"
+                  >
+                    {showDbPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <FormError message={errors.db_password} />
+              </div>
+              <div className="sm:col-span-2">
+                <FormLabel htmlFor="db_prefix" className="mb-1 block">
+                  Table Prefix
+                </FormLabel>
+                <TextInput
+                  id="db_prefix"
+                  name="db_prefix"
+                  value={formData.db_prefix}
+                  onChange={handleChange}
+                  placeholder="wp_"
+                  className="w-32 font-mono"
+                />
+                <FormError message={errors.db_prefix} />
+              </div>
+            </div>
+          </SectionDivider>
+        )}
 
         {/* GitHub Section */}
         <SectionDivider heading="GitHub Repository">

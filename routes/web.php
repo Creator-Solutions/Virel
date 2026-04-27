@@ -110,23 +110,6 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/home/settings', [UpdateSettingsController::class, '__invoke'])->name('home.settings.update');
 });
 
-Route::get('/debug-routes', function () {
-    $routes = collect(\Illuminate\Support\Facades\Route::getRoutes())
-        ->filter(fn($r) => str_contains($r->uri(), 'webhook'))
-        ->map(fn($r) => [
-            'methods' => $r->methods(),
-            'uri'     => $r->uri(),
-            'action'  => $r->getActionName(),
-        ])
-        ->values();
-    return response()->json($routes);
-});
-
-Route::get('/debug-secret/{id}', function ($id) {
-    $project = \App\Infrastructure\Persistence\Models\Project::find($id);
-    return response()->json(['secret' => $project->webhook_secret]);
-})->middleware('auth');
-
 Route::get('sanctum/csrf-cookie', function () {
     return response()->json(['csrf_token' => csrf_token()]);
 });

@@ -3,6 +3,8 @@ import type {
   UpdatePasswordPayload,
   UpdateNotificationPayload,
   SiteSettings,
+  MailSettings,
+  UpdateMailPayload,
 } from './settings.types';
 
 const BASE_URL = '/home/settings';
@@ -58,6 +60,13 @@ export const settingsService = {
     });
   },
 
+  async updateMail(payload: UpdateMailPayload): Promise<void> {
+    await request<void>(`${BASE_URL}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ mail: payload }),
+    });
+  },
+
   async getSiteSettings(): Promise<SiteSettings> {
     return request<SiteSettings>(`${BASE_URL}/data`);
   },
@@ -73,5 +82,6 @@ export const settingsService = {
 export const updateProfile = settingsService.updateProfile;
 export const updatePassword = settingsService.updatePassword;
 export const updateNotifications = settingsService.updateNotifications;
+export const updateMail = settingsService.updateMail;
 export const getSiteSettings = settingsService.getSiteSettings;
 export const updateSiteSettings = settingsService.updateSiteSettings;

@@ -24,6 +24,8 @@ class UpdateNotificationController extends Controller
             'notify_deployment_failure' => $validated['notify_deployment_failure'] ?? false,
         ]);
 
+        $user->refresh();
+
         return response()->json([
             'user' => [
                 'id' => $user->id,

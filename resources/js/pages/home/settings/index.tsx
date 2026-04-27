@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import { ProfileForm } from '@/src/components/organisms/settings/profile-form';
 import { NotificationSettingsForm } from '@/src/components/organisms/settings/notification-settings-form';
+import { EmailSettingsForm } from '@/src/components/organisms/settings/email-settings-form';
 import { ChangePasswordForm } from '@/src/components/organisms/users/change-password-form';
 import { PageHeader } from '@/src/components/molecules/common/page-header';
 import { TextField } from '@/src/components/molecules/text-field';
@@ -13,15 +14,17 @@ import type {
   UpdateProfilePayload,
   UpdateNotificationPayload,
   SiteSettings,
+  MailSettings,
 } from '@/domains/settings/settings.types';
 import {
   updateProfile,
   updatePassword,
   updateNotifications,
+  updateMail,
   getSiteSettings,
   updateSiteSettings,
 } from '@/domains/settings/settings.service';
-import type { UpdatePasswordPayload } from '@/domains/settings/settings.types';
+import type { UpdatePasswordPayload, UpdateMailPayload } from '@/domains/settings/settings.types';
 import HomeLayout from '..';
 
 const Settings = () => {
@@ -30,9 +33,11 @@ const Settings = () => {
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(false);
   const [isLoadingSite, setIsLoadingSite] = useState(false);
+  const [isLoadingEmail, setIsLoadingEmail] = useState(false);
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({ virel_url: '' });
   const [siteFormData, setSiteFormData] = useState({ virel_url: '' });
   const [siteMessage, setSiteMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [emailMessage, setEmailMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     getSiteSettings().then((settings) => {
@@ -73,6 +78,19 @@ const Settings = () => {
       setSiteMessage({ type: 'error', text: 'Failed to save settings.' });
     } finally {
       setIsLoadingSite(false);
+    }
+  };
+
+  const handleEmailUpdate = async (payload: UpdateMailPayload) => {
+    setIsLoadingEmail(true);
+    setEmailMessage(null);
+    try {
+      await updateMail(payload);
+      setEmailMessage({ type: 'success', text: 'Email settings saved successfully.' });
+    } catch {
+      setEmailMessage({ type: 'error', text: 'Failed to save email settings.' });
+    } finally {
+      setIsLoadingEmail(false);
     }
   };
 
@@ -118,6 +136,21 @@ const Settings = () => {
           errors={pageErrors}
           onSubmit={handleNotificationUpdate}
           isLoading={isLoadingNotifications}
+        />
+        <EmailSettingsForm
+          mailSettings={
+            siteSettings.mail || {
+              MAIL_HOST: '',
+              MAIL_PORT: '',
+              MAIL_USERNAME: '',
+              MAIL_PASSWORD: '',
+              MAIL_ENCRYPTION: '',
+              MAIL_FROM_ADDRESS: '',
+              MAIL_FROM_NAME: '',
+            }
+          }
+          onSubmit={handleEmailUpdate}
+          isLoading={isLoadingEmail}
         />
         <ChangePasswordForm errors={pageErrors} onSubmit={handlePasswordUpdate} isLoading={isLoadingPassword} />
       </div>

@@ -1,0 +1,339 @@
+name: virel-react
+description: React development conventions for Virel - a Laravel + Inertia.js + Tailwind 4 project
+
+rules:
+  # Project Structure
+  - description: Use the defined folder structure for all new files
+    rule: |
+      resources/js/
+      ├── pages/              # Route-based page components (Inertia pages)
+      │   └── {route}/{page}/index.tsx
+      ├── store/              # Zustand stores
+      │   └── {name}.store.ts
+      ├── domains/            # Business logic layer (services, types, schemas)
+      │   ├── {domain}/
+      │   │   ├── {domain}.service.ts
+      │   │   ├── {domain}.types.ts
+      │   │   └── {domain}.schema.ts
+      ├── src/components/     # Reusable UI components
+      │   ├── atoms/          # Primitives (Button, Input, Badge)
+      │   ├── molecules/     # Field compositions (TextField, SelectField)
+      │   ├── organisms/      # Complex forms/sections
+      │   └── templates/      # Layout components
+      ├── hooks/             # Custom hooks
+      └── lib/               # Utilities (utils.ts, constants.ts)
+
+  # File Naming
+  - description: Use kebab-case for all file names
+    rule: |
+      text-field.tsx, user-form.tsx, projects.service.ts
+      NOT: TextField.tsx, UserForm.tsx
+
+  # Component Naming & Export
+  - description: Use named exports with PascalCase function names
+    rule: |
+      function TextField() {}
+      export { TextField };
+      export type { TextFieldProps };
+
+  # Import Patterns
+  - description: Use the @ alias for absolute imports
+    rule: |
+      import { Button } from '@/src/components/atoms/button';
+      import { projectsService } from '@/domains/projects/projects.service';
+      NOT: ../../components/...
+
+  # State Management (Zustand)
+  - description: Use Zustand for global state with typed store interfaces
+    rule: |
+      interface AuthStore extends AuthState {
+        login: (credentials: LoginCredentials) => Promise<void>;
+        logout: () => Promise<void>;
+      }
+      export const useAuthStore = create<AuthStore>((set) => ({ ... }));
+
+  # API Service Pattern
+  - description: Create domain services with CSRF token handling
+    rule: |
+      const BASE_URL = '/api/resource';
+      function getCsrfToken(): string {
+        const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+      }
+      async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-XSRF-TOKEN': getCsrfToken(),
+            ...options.headers,
+          },
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return response.json();
+      }
+
+  # Component Architecture (Atomic Design)
+  - description: Build components in layers: atoms → molecules → organisms → templates
+    rule: |
+      Atoms: Primitives (Button, Input, Badge) - use CVA for variants
+      Molecules: Field compositions (TextField wraps FormField + TextInput)
+      Organisms: Complex forms (UserForm, ProjectsTable)
+      Templates: Layouts (AuthLayout, HomeLayout)
+
+  # Styling with Tailwind + CVA
+  - description: Use cn() utility for class composition, CVA for button variants
+    rule: |
+      import { cva } from 'class-variance-authority';
+      import { cn } from '@/lib/utils';
+      const buttonVariants = cva("base classes", { variants: { variant: { ... } } });
+      function Button({ className, variant, ...props }) {
+        return <Comp className={cn(buttonVariants({ variant }), className)} {...props} />;
+      }
+
+  # Form Handling
+  - description: Use controlled components with local state, pass errors from parent
+    rule: |
+      interface UserFormProps {
+        user: User;
+        errors?: Record<string, string[]>;
+        onSubmit: (payload: UpdateUserPayload) => void;
+        isLoading?: boolean;
+      }
+
+  # Inertia Page Patterns
+  - description: Access server data via usePage().props, use router.visit() for navigation
+    rule: |
+      const pageProps = usePage().props as unknown as PageProps;
+      router.visit('/path');
+      router.reload();
+
+  # TypeScript Usage
+  - description: Use TypeScript for all files, define interfaces for props and types
+    rule: |
+      interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+        variant?: 'default' | 'destructive' | 'outline';
+      }
+
+  # Hooks Usage
+  - description: Use functional components with hooks; avoid useEffect for data fetching in pages (use stores instead)
+    rule: |
+      useState, useEffect, useMemo, useCallback for local state and memoization
+      Use Zustand stores for server state, not useEffect fetch patterns
+
+  # Error Handling
+  - description: Services throw errors, pages/components handle via try/catch
+    rule: |
+      try {
+        await projectsService.deleteProject(id);
+        router.reload();
+      } finally {
+        setLoading(false);
+      }
+
+  # Custom Tailwind Components
+  - description: Use predefined component classes for consistency
+    rule: |
+      Use: .input-field, .btn-primary, .btn-secondary, .btn-danger
+      For custom styles: className="flex gap-4 text-sm"
+
+examples:
+  - description: Create a reusable TextField component following project patterns
+    prompt: |
+      Create a reusable TextField component that wraps FormField and TextInput.
+      It should support label, error, optional, hint props.
+      Follow the existing component architecture (atoms → molecules).
+    response: |
+      ```tsx
+      import * as React from 'react';
+
+      import { FormField } from './form-field';
+      import { TextInput, type TextInputProps } from '@/src/components/atoms/text-input';
+
+      interface TextFieldProps extends Omit<TextInputProps, 'className'> {
+        label: string;
+        error?: string;
+        optional?: boolean;
+        hint?: string;
+      }
+
+      function TextField({ label, error, optional, hint, id, name, ...props }: TextFieldProps) {
+        const inputId = id || name;
+
+        return (
+          <FormField label={label} htmlFor={inputId} error={error} optional={optional} hint={hint}>
+            <TextInput id={inputId} name={name} {...props} />
+          </FormField>
+        );
+      }
+
+      export { TextField };
+      export type { TextFieldProps };
+      ```
+
+  - description: Create a form component with error handling
+    prompt: |
+      Create an EditUserForm component that allows editing user details.
+      Include name, email fields with error display.
+      Follow the existing pattern with controlled inputs and error handling.
+    response: |
+      ```tsx
+      import { useState } from 'react';
+
+      import { TextInput } from '@/src/components/atoms/text-input';
+      import { FormLabel } from '@/src/components/atoms/form-label';
+      import { FormError } from '@/src/components/atoms/form-error';
+      import { Button } from '@/src/components/atoms/button';
+      import type { User, UpdateUserPayload } from '@/domains/users/users.types';
+
+      interface EditUserFormProps {
+        user: User;
+        errors?: Record<string, string[]>;
+        onSubmit: (payload: UpdateUserPayload) => void;
+        isLoading?: boolean;
+      }
+
+      function EditUserForm({ user, errors = {}, onSubmit, isLoading }: EditUserFormProps) {
+        const [formData, setFormData] = useState({
+          name: user.name,
+          email: user.email,
+        });
+
+        const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+          const { name, value } = e.target;
+          setFormData((prev) => ({ ...prev, [name]: value }));
+        };
+
+        const handleSubmit = () => {
+          onSubmit({
+            name: formData.name,
+            email: formData.email,
+          });
+        };
+
+        return (
+          <div className="space-y-6">
+            <div>
+              <FormLabel htmlFor="name">Name</FormLabel>
+              <TextInput id="name" name="name" value={formData.name} onChange={handleChange} />
+              <FormError message={errors.name?.[0]} />
+            </div>
+            <div>
+              <FormLabel htmlFor="email">Email</FormLabel>
+              <TextInput id="email" name="email" type="email" value={formData.email} onChange={handleChange} />
+              <FormError message={errors.email?.[0]} />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={handleSubmit} disabled={isLoading}>
+                {isLoading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        );
+      }
+
+      export { EditUserForm };
+      export type { EditUserFormProps };
+      ```
+
+  - description: Create a domain service for API calls with proper error handling
+    prompt: |
+      Create a projects service module for handling project CRUD operations.
+      Include getProjects, createProject, updateProject, deleteProject methods.
+      Use the existing CSRF pattern and proper error handling.
+    response: |
+      ```ts
+      import type { Project, CreateProjectPayload, UpdateProjectPayload } from './projects.types';
+
+      const BASE_URL = '/home/projects';
+
+      function getCsrfToken(): string {
+        const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+      }
+
+      async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'X-XSRF-TOKEN': getCsrfToken(),
+            ...options.headers,
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ message: 'An unexpected error occurred' }));
+          throw error;
+        }
+
+        return response.json();
+      }
+
+      export const projectsService = {
+        async getProjects(page = 1): Promise<PaginatedProjects> {
+          return request<PaginatedProjects>(`${BASE_URL}?page=${page}`);
+        },
+
+        async getProject(id: string): Promise<Project> {
+          return request<Project>(`${BASE_URL}/${id}`);
+        },
+
+        async createProject(payload: CreateProjectPayload): Promise<Project> {
+          return request<Project>(`${BASE_URL}`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+        },
+
+        async updateProject(id: string, payload: UpdateProjectPayload): Promise<Project> {
+          return request<Project>(`${BASE_URL}/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload),
+          });
+        },
+
+        async deleteProject(id: string): Promise<void> {
+          await request<void>(`${BASE_URL}/${id}`, { method: 'DELETE' });
+        },
+      };
+      ```
+
+  - description: Create a Zustand store for managing project state
+    prompt: |
+      Create a projects store using Zustand for managing project list state.
+      Include state for projects, isLoading, and actions like setProjects, setLoading.
+      Follow the existing store patterns.
+    response: |
+      ```ts
+      import { create } from 'zustand';
+      import type { Project, PaginatedResponse } from '@/domains/projects/projects.types';
+
+      interface ProjectsState {
+        projects: PaginatedResponse<Project> | null;
+        isLoading: boolean;
+        error: string | null;
+      }
+
+      interface ProjectsStore extends ProjectsState {
+        setProjects: (projects: PaginatedResponse<Project>) => void;
+        setLoading: (isLoading: boolean) => void;
+        setError: (error: string | null) => void;
+        clearProjects: () => void;
+      }
+
+      export const useProjectsStore = create<ProjectsStore>((set) => ({
+        projects: null,
+        isLoading: false,
+        error: null,
+
+        setProjects: (projects) => set({ projects }),
+        setLoading: (isLoading) => set({ isLoading }),
+        setError: (error) => set({ error }),
+        clearProjects: () => set({ projects: null, error: null }),
+      }));
+      ```

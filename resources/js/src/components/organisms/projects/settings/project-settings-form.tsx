@@ -10,6 +10,7 @@ import { DeployPathSection } from './deploy-path-section';
 import { GitHubSettingsSection } from './github-settings-section';
 import { WebhookSetupSection } from './webhook-setup-section';
 import { DangerZoneSection } from './danger-zone-section';
+import { DatabaseSettingsSection } from './database-settings-section';
 import type { Project } from '@/domains/projects/projects.types';
 
 interface ProjectSettingsFormProps {
@@ -126,6 +127,7 @@ function ProjectSettingsForm({ project, errors = {} }: ProjectSettingsFormProps)
           patError={patError}
         />
         <WebhookSetupSection webhookUrl={webhookUrl} webhookSecret={project.webhook_secret} />
+        {project.framework_type === 'wordpress' && <DatabaseSettingsSection projectId={project.id} />}
         <DangerZoneSection
           projectName={project.name}
           newSecret={newSecret}
